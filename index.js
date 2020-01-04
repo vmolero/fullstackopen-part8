@@ -126,11 +126,15 @@ const resolvers = {
     allBooks: (root, { author, genre }) => {
       let filteredBooks = books
       if (author) {
-        filteredBooks = filteredBooks.filter(book => book.author === author)
+        filteredBooks = filteredBooks.filter(
+          book => book.author.toLocaleLowerCase() === author.toLocaleLowerCase()
+        )
       }
       if (genre) {
         filteredBooks = filteredBooks.filter(book =>
-          book.genres.includes(genre)
+          book.genres
+            .map(genre => genre.toLocaleLowerCase())
+            .includes(genre.toLocaleLowerCase())
         )
       }
       return filteredBooks
@@ -139,14 +143,22 @@ const resolvers = {
   },
   Author: {
     bookCount: root => {
-      return books.filter(book => book.author === root.name).length
+      return books.filter(
+        book =>
+          book.author.toLocaleLowerCase() === root.name.toLocaleLowerCase()
+      ).length
     }
   },
   Mutation: {
     addBook: (root, args) => {
       const book = { ...args, id: uuid() }
       books = books.concat(book)
-      if (authors.findIndex(author => author.name === book.author) === -1) {
+      if (
+        authors.findIndex(
+          author =>
+            author.name.toLocaleLowerCase() === book.author.toLocaleLowerCase()
+        ) === -1
+      ) {
         authors = authors.concat({ name: book.author })
       }
       return book
