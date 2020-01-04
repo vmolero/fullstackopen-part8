@@ -1,0 +1,19 @@
+{
+  "name": "fullstackopen-part8",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vmolero/fullstackopen-part8.git"
+  },
+  "author": "Victor Molero",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/vmolero/fullstackopen-part8/issues"
+  },
+  "homepage": "https://github.com/vmolero/fullstackopen-part8#readme"
+}
