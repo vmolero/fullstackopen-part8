@@ -2,9 +2,6 @@ const { gql } = require('apollo-server')
 const Book = require('./models/Book')
 const Author = require('./models/Author')
 
-const books = require('./tests/fixtures/books')
-const authors = require('./tests/fixtures/authors')
-
 const typeDefs = gql`
   type Book {
     title: String!
@@ -41,32 +38,20 @@ const typeDefs = gql`
 
 const resolvers = {
   Query: {
-    bookCount: () => books.length,
-    authorCount: () => authors.length,
-    allBooks: (root, { author, genre }) => {
-      let filteredBooks = books
-      if (author) {
-        filteredBooks = filteredBooks.filter(
-          book => book.author.toLocaleLowerCase() === author.toLocaleLowerCase()
-        )
-      }
+    bookCount: () => Book.count(),
+    authorCount: () => Author.count(),
+    allBooks: (root, { genre }) => {
+      let criteria = {}
       if (genre) {
-        filteredBooks = filteredBooks.filter(book =>
-          book.genres
-            .map(genre => genre.toLocaleLowerCase())
-            .includes(genre.toLocaleLowerCase())
-        )
+        criteria = { genres: { $in: [genre] } }
       }
-      return filteredBooks
+      return Book.find(criteria)
     },
-    allAuthors: () => authors
+    allAuthors: () => Author.find({})
   },
   Author: {
-    bookCount: root => {
-      return books.filter(
-        book =>
-          book.author.toLocaleLowerCase() === root.name.toLocaleLowerCase()
-      ).length
+    bookCount: async root => {
+      return (await Book.find({ author: root.id })).length
     }
   },
   Mutation: {
@@ -84,14 +69,17 @@ const resolvers = {
       })
       return book.save()
     },
-    editAuthorBirth: (root, { name, setBornTo }) => {
-      const author = authors.find(author => {
-        return author.name.toLocaleLowerCase() === name.toLocaleLowerCase()
-      })
+    editAuthorBirth: async (root, { name, setBornTo }) => {
+      const author = (
+        await Author.find({
+          name: { $regex: new RegExp(name, 'i') }
+        })
+      ).pop()
       if (author) {
         author.born = setBornTo
+        return author.save()
       }
-      return author
+      return null
     }
   }
 }
