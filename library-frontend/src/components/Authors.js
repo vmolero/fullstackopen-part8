@@ -1,10 +1,15 @@
 import React, { useState } from 'react'
+import Select from 'react-select'
 
 const Authors = ({ authors, show, onEditAuthorBirth }) => {
   const [name, setName] = useState('')
   const [birth, setBirth] = useState('')
   if (!show) {
     return null
+  }
+
+  const onChange = selectedOption => {
+    setName(selectedOption.value)
   }
 
   const onSubmit = async evt => {
@@ -34,10 +39,12 @@ const Authors = ({ authors, show, onEditAuthorBirth }) => {
       <h2>Set birth year</h2>
       <form onSubmit={onSubmit}>
         <div>
-          name
-          <input
-            value={name}
-            onChange={({ target }) => setName(target.value)}
+          <Select
+            value={{ label: name, value: name }}
+            onChange={onChange}
+            options={authors.reduce((carry, author) => {
+              return [...carry, { value: author.name, label: author.name }]
+            }, [])}
           />
         </div>
         <div>
