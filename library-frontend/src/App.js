@@ -21,7 +21,9 @@ const ALL_BOOKS = gql`
   {
     allBooks {
       title
-      author
+      author {
+        name
+      }
       published
       id
     }
@@ -43,7 +45,10 @@ const ADD_BOOK = gql`
     ) {
       id
       title
-      author
+      author {
+        name
+        born
+      }
       genres
       published
     }
@@ -55,6 +60,7 @@ const EDIT_AUTHOR_BIRTH = gql`
     editAuthorBirth(name: $name, setBornTo: $setBornTo) {
       name
       born
+      id
     }
   }
 `
@@ -72,15 +78,25 @@ function getQueryData(results, queryName) {
 
 const App = () => {
   const [page, setPage] = useState('authors')
-  const allAuthorsResults = useQuery(ALL_AUTHORS)
-  const allBooksResults = useQuery(ALL_BOOKS)
+  const [errorMessage, setErrorMessage] = useState(null)
+
+  const handleError = error => {
+    setErrorMessage(error.graphQLErrors[0].message)
+    setTimeout(() => {
+      setErrorMessage(null)
+    }, 10000)
+  }
+
+  const allAuthorsResults = useQuery(ALL_AUTHORS, { onError: handleError })
+  const allBooksResults = useQuery(ALL_BOOKS, { onError: handleError })
+
   const [addBook] = useMutation(ADD_BOOK, {
-    onError: error => console.log(error),
-    refetchQueries: [{ query: ALL_BOOKS }, { query: ALL_AUTHORS }]
+    onError: handleError,
+    refetchQueries: [{ query: ALL_AUTHORS }, { query: ALL_BOOKS }]
   })
 
   const [editAuthorBirth] = useMutation(EDIT_AUTHOR_BIRTH, {
-    onError: error => console.log(error),
+    onError: handleError,
     refetchQueries: [{ query: ALL_AUTHORS }]
   })
 
@@ -98,7 +114,7 @@ const App = () => {
         <button onClick={() => setPage('books')}>books</button>
         <button onClick={() => setPage('add')}>add book</button>
       </div>
-
+      {errorMessage && <div style={{ color: 'red' }}>{errorMessage}</div>}
       <Authors
         show={page === 'authors'}
         authors={getQueryData(allAuthorsResults, 'allAuthors')}

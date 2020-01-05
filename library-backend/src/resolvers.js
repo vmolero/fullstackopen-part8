@@ -1,4 +1,4 @@
-const { gql } = require('apollo-server')
+const { gql, UserInputError } = require('apollo-server')
 const Book = require('./models/Book')
 const Author = require('./models/Author')
 
@@ -59,28 +59,45 @@ const resolvers = {
   },
   Mutation: {
     addBook: async (root, { title, published, author, genres }) => {
-      let existingAuthor = (await Author.find({ name: author })).pop()
-      if (!existingAuthor) {
-        const newAuthor = new Author({ name: author })
-        existingAuthor = await newAuthor.save()
+      try {
+        let existingAuthor = (
+          await Author.find({
+            name: { $regex: new RegExp(`^${author}$`, 'i') }
+          })
+        ).pop()
+        if (!existingAuthor) {
+          const newAuthor = new Author({ name: author })
+          existingAuthor = await newAuthor.save()
+        }
+        const book = new Book({
+          title,
+          published,
+          author: existingAuthor,
+          genres
+        })
+        const savedBook = await book.save()
+        return await Book.findById(savedBook.id).populate('author')
+      } catch (error) {
+        throw new UserInputError(error.message, {
+          invalidArgs: { title, published, author, genres }
+        })
       }
-      const book = new Book({
-        title,
-        published,
-        author: existingAuthor,
-        genres
-      })
-      return book.save()
     },
     editAuthorBirth: async (root, { name, setBornTo }) => {
-      const author = (
-        await Author.find({
-          name: { $regex: new RegExp(name, 'i') }
+      try {
+        const author = (
+          await Author.find({
+            name: { $regex: new RegExp(`^${name}$`, 'i') }
+          })
+        ).pop()
+        if (author) {
+          author.born = setBornTo
+          return author.save()
+        }
+      } catch (error) {
+        throw new UserInputError(error.message, {
+          invalidArgs: { name, setBornTo }
         })
-      ).pop()
-      if (author) {
-        author.born = setBornTo
-        return author.save()
       }
       return null
     }

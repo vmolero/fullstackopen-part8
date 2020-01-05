@@ -28,7 +28,7 @@ const Authors = ({ authors, show, onEditAuthorBirth }) => {
             <th>books</th>
           </tr>
           {authors.map(a => (
-            <tr key={a.name}>
+            <tr key={a.id}>
               <td>{a.name}</td>
               <td>{a.born}</td>
               <td>{a.bookCount}</td>
