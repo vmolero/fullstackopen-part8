@@ -19,7 +19,10 @@
   "homepage": "https://github.com/vmolero/fullstackopen-part8#readme",
   "dependencies": {
     "apollo-server": "^2.9.15",
+    "dotenv": "^8.2.0",
     "graphql": "^14.5.8",
+    "mongoose": "^5.8.4",
+    "mongoose-unique-validator": "^2.0.3",
     "uuid": "^3.3.3"
   }
 }
