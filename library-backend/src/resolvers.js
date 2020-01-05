@@ -40,12 +40,15 @@ const resolvers = {
   Query: {
     bookCount: () => Book.count(),
     authorCount: () => Author.count(),
-    allBooks: (root, { genre }) => {
+    allBooks: async (root, { genre }) => {
       let criteria = {}
       if (genre) {
         criteria = { genres: { $in: [genre] } }
       }
-      return Book.find(criteria)
+      const books = await Book.find(criteria)
+      return await Promise.all(
+        books.map(book => Book.findById(book.id).populate('author'))
+      )
     },
     allAuthors: () => Author.find({})
   },
