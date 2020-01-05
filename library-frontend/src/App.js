@@ -50,6 +50,15 @@ const ADD_BOOK = gql`
   }
 `
 
+const EDIT_AUTHOR_BIRTH = gql`
+  mutation editAuthorBirth($name: String!, $setBornTo: Int!) {
+    editAuthorBirth(name: $name, setBornTo: $setBornTo) {
+      name
+      born
+    }
+  }
+`
+
 function isQueryReady(results, queryName) {
   return 'data' in results && results.data && queryName in results.data
 }
@@ -70,6 +79,11 @@ const App = () => {
     refetchQueries: [{ query: ALL_BOOKS }, { query: ALL_AUTHORS }]
   })
 
+  const [editAuthorBirth] = useMutation(EDIT_AUTHOR_BIRTH, {
+    onError: error => console.log(error),
+    refetchQueries: [{ query: ALL_AUTHORS }]
+  })
+
   if (
     !isQueryReady(allAuthorsResults, 'allAuthors') ||
     !isQueryReady(allBooksResults, 'allBooks')
@@ -88,6 +102,7 @@ const App = () => {
       <Authors
         show={page === 'authors'}
         authors={getQueryData(allAuthorsResults, 'allAuthors')}
+        onEditAuthorBirth={editAuthorBirth}
       />
 
       <Books

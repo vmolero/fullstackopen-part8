@@ -1,9 +1,17 @@
-import React from 'react'
+import React, { useState } from 'react'
 
-const Authors = ({ authors, show }) => {
+const Authors = ({ authors, show, onEditAuthorBirth }) => {
+  const [name, setName] = useState('')
+  const [birth, setBirth] = useState('')
   if (!show) {
     return null
   }
+
+  const onSubmit = async evt => {
+    evt.preventDefault()
+    await onEditAuthorBirth({ variables: { name, setBornTo: parseInt(birth) } })
+  }
+
   return (
     <div>
       <h2>authors</h2>
@@ -23,6 +31,24 @@ const Authors = ({ authors, show }) => {
           ))}
         </tbody>
       </table>
+      <h2>Set birth year</h2>
+      <form onSubmit={onSubmit}>
+        <div>
+          name
+          <input
+            value={name}
+            onChange={({ target }) => setName(target.value)}
+          />
+        </div>
+        <div>
+          birth year
+          <input
+            value={birth}
+            onChange={({ target }) => setBirth(target.value)}
+          />
+        </div>
+        <button type="submit">edit birth year</button>
+      </form>
     </div>
   )
 }
