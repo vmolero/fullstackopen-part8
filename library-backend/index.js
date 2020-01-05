@@ -159,7 +159,7 @@ const resolvers = {
             author.name.toLocaleLowerCase() === book.author.toLocaleLowerCase()
         ) === -1
       ) {
-        authors = authors.concat({ name: book.author })
+        authors = authors.concat({ name: book.author, id: uuid() })
       }
       return book
     },
