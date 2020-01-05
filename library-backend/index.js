@@ -115,7 +115,7 @@ const typeDefs = gql`
       author: String!
       genres: [String!]
     ): Book
-    editAuthor(name: String!, setBornTo: Int!): Author
+    editAuthorBirth(name: String!, setBornTo: Int!): Author
   }
 `
 
@@ -163,7 +163,7 @@ const resolvers = {
       }
       return book
     },
-    editAuthor: (root, { name, setBornTo }) => {
+    editAuthorBirth: (root, { name, setBornTo }) => {
       const author = authors.find(author => {
         return author.name.toLocaleLowerCase() === name.toLocaleLowerCase()
       })
