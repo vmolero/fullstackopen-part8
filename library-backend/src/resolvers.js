@@ -1,5 +1,7 @@
 const { gql } = require('apollo-server')
-const uuid = require('uuid/v1')
+const Book = require('./models/Book')
+const Author = require('./models/Author')
+
 const books = require('./tests/fixtures/books')
 const authors = require('./tests/fixtures/authors')
 
@@ -7,8 +9,8 @@ const typeDefs = gql`
   type Book {
     title: String!
     published: Int
-    author: String!
     genres: [String!]
+    author: Author!
     id: ID!
   }
 
@@ -68,18 +70,19 @@ const resolvers = {
     }
   },
   Mutation: {
-    addBook: (root, args) => {
-      const book = { ...args, id: uuid() }
-      books = books.concat(book)
-      if (
-        authors.findIndex(
-          author =>
-            author.name.toLocaleLowerCase() === book.author.toLocaleLowerCase()
-        ) === -1
-      ) {
-        authors = authors.concat({ name: book.author, id: uuid() })
+    addBook: async (root, { title, published, author, genres }) => {
+      let existingAuthor = (await Author.find({ name: author })).pop()
+      if (!existingAuthor) {
+        const newAuthor = new Author({ name: author })
+        existingAuthor = await newAuthor.save()
       }
-      return book
+      const book = new Book({
+        title,
+        published,
+        author: existingAuthor,
+        genres
+      })
+      return book.save()
     },
     editAuthorBirth: (root, { name, setBornTo }) => {
       const author = authors.find(author => {
