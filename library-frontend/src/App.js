@@ -6,6 +6,7 @@ import Authors from './components/Authors'
 import Books from './components/Books'
 import NewBook from './components/NewBook'
 import Login from './components/Login'
+import EditBirth from './components/EditBirth'
 
 const ALL_AUTHORS = gql`
   {
@@ -136,17 +137,10 @@ const App = () => {
   })
   const [loginHandler] = useMutation(LOGIN, {
     onError: handleError,
+    onCompleted: () => setPage('books'),
     refetchQueries: [{ query: ALL_AUTHORS }, { query: ALL_BOOKS }]
   })
 
-  if (!token) {
-    return (
-      <Login
-        onLogin={loginHandler}
-        onToken={userToken => setToken(userToken)}
-      />
-    )
-  }
   if (
     !isQueryReady(allAuthorsResults, 'allAuthors') ||
     !isQueryReady(allBooksResults, 'allBooks')
@@ -157,19 +151,29 @@ const App = () => {
   return (
     <div>
       <div>
-        <button onClick={() => logout()}>logout</button>
-      </div>
-      <div>
         <button onClick={() => setPage('authors')}>authors</button>
         <button onClick={() => setPage('books')}>books</button>
-        <button onClick={() => setPage('add')}>add book</button>
+        {token ? (
+          <>
+            <button onClick={() => setPage('edit')}>edit year</button>
+            <button onClick={() => setPage('add')}>add book</button>
+            <button onClick={() => logout()}>logout</button>
+          </>
+        ) : (
+          <button onClick={() => setPage('login')}>login</button>
+        )}
       </div>
       {errorMessage && <div style={{ color: 'red' }}>{errorMessage}</div>}
+
+      <Login
+        show={page === 'login' && !token}
+        onLogin={loginHandler}
+        onToken={userToken => setToken(userToken)}
+      />
 
       <Authors
         show={page === 'authors'}
         authors={getQueryData(allAuthorsResults, 'allAuthors')}
-        onEditAuthorBirth={editAuthorBirth}
       />
 
       <Books
@@ -178,6 +182,12 @@ const App = () => {
       />
 
       <NewBook show={page === 'add'} onAddBook={addBook} />
+
+      <EditBirth
+        show={page === 'edit'}
+        authors={getQueryData(allAuthorsResults, 'allAuthors')}
+        onEditAuthorBirth={editAuthorBirth}
+      />
     </div>
   )
 }

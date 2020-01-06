@@ -1,8 +1,12 @@
 import React, { useState } from 'react'
 
-const Login = ({ onLogin, onToken }) => {
+const Login = ({ show, onLogin, onToken }) => {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+
+  if (!show) {
+    return null
+  }
 
   const submit = async e => {
     e.preventDefault()
