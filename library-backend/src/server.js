@@ -25,7 +25,7 @@ async function boot() {
     typeDefs,
     resolvers,
     context: async ({ req }) => {
-      if (!('token' in req)) {
+      if (!req || !('token' in req)) {
         return null
       }
       const decodedToken = jwt.verify(req.token, config.SECRET)
@@ -34,7 +34,7 @@ async function boot() {
     }
   })
   server.applyMiddleware({ app })
-  return app
+  return { app, apolloServer: server }
 }
 
 module.exports = { boot }

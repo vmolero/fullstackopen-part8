@@ -1,61 +1,14 @@
 const _ = require('lodash')
-const {
-  gql,
-  UserInputError,
-  AuthenticationError
-} = require('apollo-server-express')
+const { UserInputError, AuthenticationError } = require('apollo-server-express')
+const { PubSub } = require('apollo-server')
+
 const Book = require('./models/Book')
 const Author = require('./models/Author')
 const User = require('./models/User')
 const { getToken } = require('./utils/helper')
+const typeDefs = require('./schema')
 
-const typeDefs = gql`
-  type User {
-    username: String!
-    favoriteGenre: String!
-    id: ID!
-  }
-
-  type Token {
-    value: String!
-  }
-
-  type Book {
-    title: String!
-    published: Int
-    genres: [String!]
-    author: Author!
-    id: ID!
-  }
-
-  type Author {
-    name: String!
-    id: ID!
-    bookCount: Int!
-    born: Int
-  }
-
-  type Query {
-    bookCount: Int!
-    authorCount: Int!
-    allBooks(author: String, genre: String): [Book!]!
-    allAuthors: [Author!]!
-    me: User
-    distinctGenres: [String!]
-  }
-
-  type Mutation {
-    addBook(
-      title: String!
-      published: Int
-      author: String!
-      genres: [String!]
-    ): Book
-    editAuthorBirth(name: String!, setBornTo: Int!): Author
-    createUser(username: String!, favoriteGenre: String!): User
-    login(username: String!, password: String!): Token
-  }
-`
+const publisher = new PubSub()
 
 const resolvers = {
   Query: {
@@ -111,6 +64,7 @@ const resolvers = {
           genres
         })
         const savedBook = await book.save()
+        publisher.publish('BOOK_ADDED', { bookAdded: savedBook })
         return await Book.findById(savedBook.id).populate('author')
       } catch (error) {
         throw new UserInputError(error.message, {
@@ -152,6 +106,11 @@ const resolvers = {
     },
     login: async (root, { username, password }) => {
       return { value: await getToken({ username, password }) }
+    }
+  },
+  Subscription: {
+    bookAdded: {
+      subscribe: () => publisher.asyncIterator(['BOOK_ADDED'])
     }
   }
 }
