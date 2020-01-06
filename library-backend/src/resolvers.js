@@ -1,8 +1,24 @@
-const { gql, UserInputError } = require('apollo-server')
+const {
+  gql,
+  UserInputError,
+  AuthenticationError
+} = require('apollo-server-express')
 const Book = require('./models/Book')
 const Author = require('./models/Author')
+const User = require('./models/User')
+const { getToken } = require('./utils/helper')
 
 const typeDefs = gql`
+  type User {
+    username: String!
+    favoriteGenre: String!
+    id: ID!
+  }
+
+  type Token {
+    value: String!
+  }
+
   type Book {
     title: String!
     published: Int
@@ -23,6 +39,7 @@ const typeDefs = gql`
     authorCount: Int!
     allBooks(author: String, genre: String): [Book!]!
     allAuthors: [Author!]!
+    me: User
   }
 
   type Mutation {
@@ -33,6 +50,8 @@ const typeDefs = gql`
       genres: [String!]
     ): Book
     editAuthorBirth(name: String!, setBornTo: Int!): Author
+    createUser(username: String!, favoriteGenre: String!): User
+    login(username: String!, password: String!): Token
   }
 `
 
@@ -50,7 +69,10 @@ const resolvers = {
         books.map(book => Book.findById(book.id).populate('author'))
       )
     },
-    allAuthors: () => Author.find({})
+    allAuthors: () => Author.find({}),
+    me: (root, args, context) => {
+      return context.currentUser
+    }
   },
   Author: {
     bookCount: async root => {
@@ -58,7 +80,14 @@ const resolvers = {
     }
   },
   Mutation: {
-    addBook: async (root, { title, published, author, genres }) => {
+    addBook: async (
+      root,
+      { title, published, author, genres },
+      { currentUser }
+    ) => {
+      if (!currentUser) {
+        throw new AuthenticationError('not authenticated')
+      }
       try {
         let existingAuthor = (
           await Author.find({
@@ -83,7 +112,10 @@ const resolvers = {
         })
       }
     },
-    editAuthorBirth: async (root, { name, setBornTo }) => {
+    editAuthorBirth: async (root, { name, setBornTo }, { currentUser }) => {
+      if (!currentUser) {
+        throw new AuthenticationError('not authenticated')
+      }
       try {
         const author = (
           await Author.find({
@@ -100,6 +132,20 @@ const resolvers = {
         })
       }
       return null
+    },
+    createUser: async (root, { username, favoriteGenre }) => {
+      const user = new User({ username, favoriteGenre })
+      try {
+        const savedUser = await user.save()
+        return savedUser
+      } catch (error) {
+        throw new UserInputError(error.message, {
+          invalidArgs: { username }
+        })
+      }
+    },
+    login: async (root, { username, password }) => {
+      return { value: await getToken({ username, password }) }
     }
   }
 }
