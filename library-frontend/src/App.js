@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { useQuery, useMutation, useApolloClient } from 'react-apollo'
+import {
+  useQuery,
+  useMutation,
+  useApolloClient,
+  useSubscription
+} from 'react-apollo'
 import { gql } from 'apollo-boost'
 
 import Authors from './components/Authors'
@@ -92,6 +97,17 @@ const EDIT_AUTHOR_BIRTH = gql`
   }
 `
 
+const BOOK_ADDED = gql`
+  subscription {
+    bookAdded {
+      title
+      author {
+        name
+      }
+    }
+  }
+`
+
 function isQueryReady(results, queryName) {
   return 'data' in results && results.data && queryName in results.data
 }
@@ -173,6 +189,12 @@ const App = () => {
         query: ME
       }
     ]
+  })
+
+  useSubscription(BOOK_ADDED, {
+    onSubscriptionData: ({ subscriptionData }) => {
+      window.alert('New book ' + subscriptionData.data.bookAdded.title)
+    }
   })
 
   if (
