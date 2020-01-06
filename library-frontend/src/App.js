@@ -14,6 +14,18 @@ import Login from './components/Login'
 import EditBirth from './components/EditBirth'
 import Recommend from './components/Recommended'
 
+const BOOK_FRAGMENT = gql`
+  fragment BookDetails on Book {
+    title
+    author {
+      name
+    }
+    published
+    genres
+    id
+  }
+`
+
 const ALL_AUTHORS = gql`
   {
     allAuthors {
@@ -28,15 +40,10 @@ const ALL_AUTHORS = gql`
 const ALL_BOOKS = gql`
   {
     allBooks {
-      title
-      author {
-        name
-      }
-      published
-      genres
-      id
+      ...BookDetails
     }
   }
+  ${BOOK_FRAGMENT}
 `
 
 const ME = gql`
@@ -100,12 +107,10 @@ const EDIT_AUTHOR_BIRTH = gql`
 const BOOK_ADDED = gql`
   subscription {
     bookAdded {
-      title
-      author {
-        name
-      }
+      ...BookDetails
     }
   }
+  ${BOOK_FRAGMENT}
 `
 
 function isQueryReady(results, queryName) {
@@ -146,6 +151,41 @@ const App = () => {
     }, 10000)
   }
 
+  const updateCacheWith = (element, query, updateFn) => {
+    const dataInStore = client.readQuery({ query })
+
+    if (updateFn(dataInStore, element)) {
+      client.writeQuery({
+        query,
+        data: dataInStore
+      })
+    }
+  }
+
+  const updateBooksCache = addedBook => {
+    const includedIn = (set, object) => set.map(p => p.id).includes(object.id)
+
+    const dataInStore = client.readQuery({ query: ALL_BOOKS })
+    if (!includedIn(dataInStore.allBooks, addedBook)) {
+      dataInStore.allBooks = [...dataInStore.allBooks].concat(addedBook)
+      client.writeQuery({
+        query: ALL_BOOKS,
+        data: dataInStore
+      })
+    }
+  }
+
+  const updateBooksCache_ = newBook => {
+    return updateCacheWith(newBook, ALL_BOOKS, (store, addedBook) => {
+      const includedIn = (set, object) => set.map(p => p.id).includes(object.id)
+      if (!includedIn(store.allBooks, addedBook)) {
+        store.allBooks.push(addedBook)
+        return true
+      }
+      return false
+    })
+  }
+
   useQuery(ME, {
     onError: handleError,
     onCompleted: response => {
@@ -165,14 +205,12 @@ const App = () => {
 
   const [addBook] = useMutation(ADD_BOOK, {
     onError: handleError,
+    onCompleted: () => {
+      setPage('books')
+    },
     update: (store, addBookResult) => {
-      const dataInStore = store.readQuery({ query: ALL_BOOKS })
       const newBook = getQueryData(addBookResult, 'addBook')
-      dataInStore.allBooks.push(newBook)
-      store.writeQuery({
-        query: ALL_BOOKS,
-        data: dataInStore
-      })
+      updateBooksCache(newBook)
     }
   })
   const [editAuthorBirth] = useMutation(EDIT_AUTHOR_BIRTH, {
@@ -193,7 +231,8 @@ const App = () => {
 
   useSubscription(BOOK_ADDED, {
     onSubscriptionData: ({ subscriptionData }) => {
-      window.alert('New book ' + subscriptionData.data.bookAdded.title)
+      const newBook = subscriptionData.data.bookAdded
+      updateBooksCache(newBook)
     }
   })
 
