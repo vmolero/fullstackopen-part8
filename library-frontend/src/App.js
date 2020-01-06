@@ -27,6 +27,7 @@ const ALL_BOOKS = gql`
         name
       }
       published
+      genres
       id
     }
   }
@@ -45,6 +46,12 @@ const LOGIN = gql`
     login(username: $username, password: $password) {
       value
     }
+  }
+`
+
+const GENRES = gql`
+  {
+    distinctGenres
   }
 `
 
@@ -120,6 +127,14 @@ const App = () => {
     }, 10000)
   }
 
+  const meResult = useQuery(ME, {
+    onError: handleError,
+    fetchPolicy: 'network-only'
+  })
+
+  const genresResult = useQuery(GENRES, {
+    onError: handleError
+  })
   const allAuthorsResults = useQuery(ALL_AUTHORS, {
     onError: handleError
   })
@@ -147,12 +162,18 @@ const App = () => {
   })
   const [loginHandler] = useMutation(LOGIN, {
     onError: handleError,
-    onCompleted: () => setPage('books')
+    onCompleted: () => setPage('books'),
+    refetchQueries: [
+      {
+        query: ME
+      }
+    ]
   })
 
   if (
     !isQueryReady(allAuthorsResults, 'allAuthors') ||
-    !isQueryReady(allBooksResults, 'allBooks')
+    !isQueryReady(allBooksResults, 'allBooks') ||
+    !isQueryReady(genresResult, 'distinctGenres')
   ) {
     return <p>Loading data ...</p>
   }
@@ -167,6 +188,9 @@ const App = () => {
             <button onClick={() => setPage('edit')}>edit year</button>
             <button onClick={() => setPage('add')}>add book</button>
             <button onClick={() => logout()}>logout</button>
+            {getQueryData(meResult, 'me') ? (
+              <span>Logged as {getQueryData(meResult, 'me').username}</span>
+            ) : null}
           </>
         ) : (
           <button onClick={() => setPage('login')}>login</button>
@@ -188,6 +212,7 @@ const App = () => {
       <Books
         show={page === 'books'}
         books={getQueryData(allBooksResults, 'allBooks')}
+        genres={getQueryData(genresResult, 'distinctGenres')}
       />
 
       <NewBook show={page === 'add'} onAddBook={addBook} />

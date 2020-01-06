@@ -1,3 +1,4 @@
+const _ = require('lodash')
 const {
   gql,
   UserInputError,
@@ -40,6 +41,7 @@ const typeDefs = gql`
     allBooks(author: String, genre: String): [Book!]!
     allAuthors: [Author!]!
     me: User
+    distinctGenres: [String!]
   }
 
   type Mutation {
@@ -72,6 +74,10 @@ const resolvers = {
     allAuthors: () => Author.find({}),
     me: (root, args, context) => {
       return context.currentUser
+    },
+    distinctGenres: async () => {
+      const books = await Book.find({})
+      return _.uniq(books.map(book => book.genres).flat())
     }
   },
   Author: {
