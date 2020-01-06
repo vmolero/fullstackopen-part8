@@ -7,6 +7,7 @@ import Books from './components/Books'
 import NewBook from './components/NewBook'
 import Login from './components/Login'
 import EditBirth from './components/EditBirth'
+import Recommend from './components/Recommended'
 
 const ALL_AUTHORS = gql`
   {
@@ -37,6 +38,7 @@ const ME = gql`
   {
     me {
       username
+      favoriteGenre
     }
   }
 `
@@ -104,6 +106,7 @@ function getQueryData(results, queryName) {
 const App = () => {
   const [page, setPage] = useState('authors')
   const [token, setToken] = useState(null)
+  const [me, setMe] = useState(null)
   const [errorMessage, setErrorMessage] = useState(null)
   const client = useApolloClient()
 
@@ -127,9 +130,11 @@ const App = () => {
     }, 10000)
   }
 
-  const meResult = useQuery(ME, {
+  useQuery(ME, {
     onError: handleError,
-    fetchPolicy: 'network-only'
+    onCompleted: response => {
+      setMe(response.me)
+    }
   })
 
   const genresResult = useQuery(GENRES, {
@@ -185,12 +190,13 @@ const App = () => {
         <button onClick={() => setPage('books')}>books</button>
         {token ? (
           <>
+            {me ? (
+              <button onClick={() => setPage('recommend')}>recommended</button>
+            ) : null}
             <button onClick={() => setPage('edit')}>edit year</button>
             <button onClick={() => setPage('add')}>add book</button>
             <button onClick={() => logout()}>logout</button>
-            {getQueryData(meResult, 'me') ? (
-              <span>Logged as {getQueryData(meResult, 'me').username}</span>
-            ) : null}
+            {me ? <span>Logged as {me.username}</span> : null}
           </>
         ) : (
           <button onClick={() => setPage('login')}>login</button>
@@ -213,6 +219,12 @@ const App = () => {
         show={page === 'books'}
         books={getQueryData(allBooksResults, 'allBooks')}
         genres={getQueryData(genresResult, 'distinctGenres')}
+      />
+
+      <Recommend
+        show={page === 'recommend' && me}
+        books={getQueryData(allBooksResults, 'allBooks')}
+        user={me}
       />
 
       <NewBook show={page === 'add'} onAddBook={addBook} />
