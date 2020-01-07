@@ -153,7 +153,6 @@ const App = () => {
 
   const updateCacheWith = (element, query, updateFn) => {
     const dataInStore = client.readQuery({ query })
-
     if (updateFn(dataInStore, element)) {
       client.writeQuery({
         query,
@@ -162,24 +161,11 @@ const App = () => {
     }
   }
 
-  const updateBooksCache = addedBook => {
-    const includedIn = (set, object) => set.map(p => p.id).includes(object.id)
-
-    const dataInStore = client.readQuery({ query: ALL_BOOKS })
-    if (!includedIn(dataInStore.allBooks, addedBook)) {
-      dataInStore.allBooks = [...dataInStore.allBooks].concat(addedBook)
-      client.writeQuery({
-        query: ALL_BOOKS,
-        data: dataInStore
-      })
-    }
-  }
-
-  const updateBooksCache_ = newBook => {
+  const updateBooksCache = newBook => {
     return updateCacheWith(newBook, ALL_BOOKS, (store, addedBook) => {
       const includedIn = (set, object) => set.map(p => p.id).includes(object.id)
       if (!includedIn(store.allBooks, addedBook)) {
-        store.allBooks.push(addedBook)
+        store.allBooks = [...store.allBooks].concat(addedBook)
         return true
       }
       return false
